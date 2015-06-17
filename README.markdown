@@ -24,7 +24,7 @@ consider creating a pull request.
 
 The reporters also work in Node.js, and most can be used in combination with
 [jasmine-node](https://github.com/mhevery/jasmine-node). Make sure to use the correct
-combination of jasmine-repoters and jasmine-node, as both projects have different versions
+combination of jasmine-reporters and jasmine-node, as both projects have different versions
 / branches for Jasmine1.x vs Jasmine2.x support.
 
 # Basic Usage
@@ -106,4 +106,34 @@ Then set everything up inside your protractor.conf:
             filePrefix: 'xmloutput',
             savePath: 'testresults'
         }));
+    }
+    
+If you run a multi-capability setup you can reflect this in your test result
+by using the option `modifySuiteName`. This enables to have distinct results
+per capability.
+
+    framework: "jasmine2",
+    onPrepare: function() {
+        var jasmineReporters = require('jasmine-reporters');
+        
+        browser.getProcessedConfig().then(function (config) {
+            
+            var cap = config.capabilities;
+            var browserPlatform = cap.platform || cap.platformName || "ANY_PLATFORM";
+            var prePendStr = browserPlatform + '-' + cap.browserName.toUpperCase() + '-';
+            if(cap.version) {
+    
+                prePendStr += 'v' + cap.version + '-';
+            }
+    
+            var junitReporter = new jasmineReporters.JUnitXmlReporter({
+                consolidateAll: false,  // this will produce distinct xml files for each capability
+                savePath: 'e2e-tests-results',
+                filePrefix: prePendStr,
+                modifySuiteName: function (generatedSuiteName, suite) {
+                    return prePendStr + generatedSuiteName;
+                }
+            });
+            jasmine.getEnv().addReporter(junitReporter);
+        });
     }
